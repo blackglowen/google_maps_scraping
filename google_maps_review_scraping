@@ -5,7 +5,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import pyautogui
 import time
-import requests
 from bs4 import BeautifulSoup
 from selenium.webdriver.support.wait import WebDriverWait
 
@@ -68,44 +67,39 @@ def google_maps_yorum_bilgileri_cekme(url):
             yorum_bulma = soup.findAll('div', class_='GHT2ce')
             for rw in range(len(yorum_bulma)):
                 cnvrt = str(yorum_bulma[rw])
-                print("cnvrt degeri:", cnvrt)
                 if "GHT2ce NsCY4" in cnvrt:
                     pass
                 else:
                     if "MyEned" in cnvrt:
-                        print("yorum vardır.")
                         # yorum içerisinde daha fazla gibi bir button varsa onun tıklanabilmesi için aşağıdaki kod kullanılıyor.
                         if yorum_bulma[rw].find('button', class_='w8nwRe kyuRq'):# eğer ki yorum içerisinde daha fazla gibi yorumun cevabı uzunsa buraya girip tıklanması gerekiyor. daha sonra yorum kısmı çekilmesi lazım.
-                            print("daha fazlası bulundu")
-
+                            print("yorum içerisinde daha fazla seçeneği vardır.")
                             button = yorum_bulma[rw].find('button', class_='w8nwRe kyuRq')
-                            for m in button:
-                                print(m.text)
-                                if m.text == "Daha fazla":
-                                    driver.execute_script('arguments[0].click();', m)
-                                    print("daha fazla olan kısım tıklandı")
+                            split=str(button).split(' ')
+                            # burada direk olarak data-review-id değerine ulaşamadım bu yüzden string bir değere dönüştürüp strip ile içindeki data-review-id değerine ulaştım.
+                            # Bu data-review-id değeri tıklamak istediğimiz "Daha fazla" buttonuna tıklatıp geri kalan yorumları görmek için bu id değerine ihtiyacımız vardı
+                            # çünkü bu değer o buttonun xpath değeri içinde her yorum için unique olarak bulunuyor o yüzden o yorumun data-review-id değerini aldım ve içine ekledim ki her seferinde
+                            # yeni gelen yorumun "Daha fazla" butonuna tıklayabilelim. Değişken olduğu için id değerini de yorum içinden çekmemiz lazım.
+                            for spt in split:
+                                if "data-review-id" in spt:
+                                    id_degeri=spt[15:] # elimizdeki değer data-review-id="ChdDSUhNMG9nS0VJQ0FnSUQyekk2TXFnRRAB" biz burdan 15. indexten en son değere kadar yani " işaretine kadar almak istiyoruz o yüzden [15:] yaptım.
+                            driver.find_element(by=By.XPATH,value='//*[@id='+id_degeri+']/span[2]/button').click()
                             time.sleep(3)
                             user_review_list.append(yorum_bulma[rw].find('span', class_='wiI7pd').text)
                         else:# eğer ki yorum uzun değilse o zaman tıklanacak bir şey yoktur o yüzden direk yorumu çekeriz.
                             user_review_list.append(yorum_bulma[rw].find('span', class_='wiI7pd').text)
-
-
-                        # user_review_list.append(yorum_bulma[rw].find('span', class_='wiI7pd').text)
-
 
                     else:
                         user_review_list.append("yorum bulunmamaktadır.")
                         print("yorum yoktur")
                     if "CDe7pd" in cnvrt:
                         firmanin_cevabi_degeri=yorum_bulma[rw].find('div', class_='CDe7pd')
-                        print("firmanın cevabı:",firmanin_cevabi_degeri)
                         firmanin_cevabi.append(firmanin_cevabi_degeri.find('div',class_='wiI7pd').text)
                         firmanin_cevap_verdigi_tarih.append(firmanin_cevabi_degeri.find('span',class_='DZSIDd').text)
 
                     else:
                         firmanin_cevabi.append("Firma cevap vermemiştir.")
                         firmanin_cevap_verdigi_tarih.append(" ")
-            print("user review:", user_review_list)
 
             for k in range(len(user_name)):
                 """yorum puanlarının çekildiği kısım"""
@@ -117,8 +111,7 @@ def google_maps_yorum_bilgileri_cekme(url):
 
                 details.append({"kullanici": user_name[k].text, "yorum": user_review_list[k], "yorum_puani": puan,"yorum_yapilma_tarihi": user_reviews_create_date[k].text,"firmanın cevabı":firmanin_cevabi[k],"firmanın cevap verdiği tarih":firmanin_cevap_verdigi_tarih[k]})
 
-            print("details bilgileri:",details)
-            print("details boyutu:", len(details))
+            print("Çekilen yorum boyutu:", len(details))
 
             #sayfanın kaydırılması kısmı ve bilgilerin soup değişkeni içerisine atanması kısmıdır. Burada ikinci defa soup kullanıyoruz çünkü her seferinde sayfa yüklendiği için bilgiler güncelleniyor ve çekebilmek için de bizim yine html.parser  kullanmamız gerekiyor.
             ele = driver.find_element(by=By.XPATH,value='//*[@id="QA0Szd"]/div/div/div[1]/div[2]/div/div[1]/div/div/div[3]')
@@ -173,6 +166,4 @@ def google_maps_yorum_bilgileri_cekme(url):
 
 konum_linkleri=["https://goo.gl/maps/vX6doyy1CVwYoHQXA","https://goo.gl/maps/hUdjvtBtoXcLrits7","https://goo.gl/maps/XNAQ7WVY8nUmucs47"]
 
-google_maps_yorum_bilgileri_cekme("https://goo.gl/maps/vX6doyy1CVwYoHQXA")
-# for link in konum_linkleri:
-#     google_maps_yorum_bilgileri_cekme(link)
+google_maps_yorum_bilgileri_cekme("https://goo.gl/maps/XNAQ7WVY8nUmucs47")
